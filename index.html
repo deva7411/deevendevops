@@ -1,0 +1,693 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  
+  <title>Deeven VM — Portfolio</title>
+
+  <!-- Bootstrap 5 -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- Icons -->
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+  <!-- GSAP -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+  <!-- ScrollReveal -->
+  <script src="https://unpkg.com/scrollreveal"></script>
+
+  <style>
+    :root{
+      --bg:#030426; /* deep navy */
+      --glass: rgba(255,255,255,0.05);
+      --accent1: #7b61ff; /* purple */
+      --accent2: #00e5ff; /* cyan */
+      --neon: rgba(124,97,255,0.18);
+      --glass-border: rgba(255,255,255,0.07);
+      --glass-highlight: rgba(255,255,255,0.02);
+      color-scheme: dark;
+    }
+    /* Dark mode handling (prefers) */
+    html.dark{ --bg:#050414; --glass: rgba(255,255,255,0.03); }
+    
+
+    body{
+      /* background: linear-gradient(180deg, rgba(3,4,38,1) 0%, rgba(6,7,60,1) 60%); */
+      /* background: linear-gradient(180deg, rgba(0, 166, 243, 0.651) 0%, rgba(6,7,60,1) 60%); */
+      background-image: radial-gradient(circle at 87% 4%, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0.03) 8%,transparent 8%, transparent 92%),radial-gradient(circle at 51% 31%, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0.03) 8%,transparent 8%, transparent 92%),radial-gradient(circle at 58% 26%, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.04) 6%,transparent 6%, transparent 94%),radial-gradient(circle at 4% 34%, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.04) 6%,transparent 6%, transparent 94%),radial-gradient(circle at 30% 82%, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.04) 6%,transparent 6%, transparent 94%),radial-gradient(circle at 68% 92%, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.04) 6%,transparent 6%, transparent 94%),radial-gradient(circle at 19% 32%, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.04) 4%,transparent 4%, transparent 96%),radial-gradient(circle at 50% 41%, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.04) 4%,transparent 4%, transparent 96%),radial-gradient(circle at 46% 3%, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.04) 4%,transparent 4%, transparent 96%),radial-gradient(circle at 49% 58%, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.04) 4%,transparent 4%, transparent 96%),linear-gradient(0deg, rgba(52, 208, 235, 0.349),rgba(69, 23, 221, 0.151));
+
+
+      min-height:100vh; margin:0; font-family: Inter, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;
+      color:#e6eef8; overflow-x:hidden;
+      background-color:var(--bg);
+    }
+
+    /* Loading overlay */
+    #loading {
+      position:fixed; inset:0; display:flex; align-items:center; justify-content:center; z-index:9999;
+      background: linear-gradient(135deg, rgba(7,7,30,0.95), rgba(3,4,38,0.85));
+      backdrop-filter: blur(6px);
+    }
+    .loader {
+      width:90px; height:90px; border-radius:50%; border:6px solid rgba(255,255,255,0.06);
+      position:relative; box-shadow:0 6px 30px rgba(124,97,255,0.12) inset;
+    }
+    .loader::after{
+      content:''; position:absolute; inset:10px; border-radius:50%; border:6px solid transparent; border-top-color:var(--accent2); animation:spin 1.2s linear infinite;
+    }
+    @keyframes spin{ to{ transform:rotate(360deg);} }
+
+    /* navbar */
+    .navbar-custom{ backdrop-filter: blur(8px); background:linear-gradient(90deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01)); border-bottom:1px solid var(--glass-border); }
+    .nav-link{ color: #cfe8ff; transition: all .25s ease; }
+    .nav-link:hover{ color:var(--accent2); transform:translateY(-2px); }
+    .brand{ font-weight:700; letter-spacing:0.6px; color:var(--accent1); }
+
+    /* hero */
+    .hero{ min-height:100vh; display:flex; align-items:center; position:relative; overflow:hidden; }
+    .hero .content{ z-index:3; }
+    .hero h1{ font-size:3.6rem; font-weight:800; line-height:1.02; }
+    .subtitle{ font-size:1.1rem; opacity:.9; margin-top:.6rem }
+    .cta{ margin-top:1.4rem }
+
+    /* background canvas */
+    #bgCanvas{ position:absolute; inset:0; z-index:1; }
+    .neon-strip{ position:absolute; inset:auto 0 0 0; height:12vh; background:linear-gradient(90deg, rgba(124,97,255,0.06), rgba(0,229,255,0.04)); z-index:2 }
+
+    /* glass cards */
+    .glass{ background:var(--glass); border:1px solid var(--glass-border); border-radius:14px; padding:1.2rem; box-shadow: 0 8px 30px rgba(2,6,23,0.6); }
+
+    /* about timeline */
+    .timeline{ display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:1rem }
+    .flip-card{ perspective:1200px }
+    .flip-inner{ transition: transform .8s cubic-bezier(.2,.9,.2,1); transform-style:preserve-3d; position:relative }
+    .flip-card:hover .flip-inner{ transform:rotateY(180deg) }
+    .flip-front, .flip-back{ backface-visibility:hidden; position:relative; border-radius:10px; min-height:140px }
+    .flip-back{ transform:rotateY(180deg); position:absolute; inset:0 }
+
+    /* skills */
+    .skill-circle{ width:120px; height:120px; display:grid; place-items:center }
+    .skill-label{ margin-top:.6rem; font-weight:600; font-size:.95rem }
+
+    /* projects */
+    .project-card{ overflow:hidden; border-radius:12px; position:relative }
+    .project-card img{ width:100%; height:180px; object-fit:cover }
+    .project-overlay{ position:absolute; inset:0; display:flex; align-items:flex-end; padding:1rem; background:linear-gradient(180deg, transparent, rgba(0,0,0,0.6)); transition:all .3s ease }
+    .project-card:hover .project-overlay{ transform:translateY(-6px) }
+
+    /* achievements */
+    .ach-card{ min-height:120px; display:flex; align-items:center; justify-content:center }
+
+    /* contact */
+    .contact-card{ max-width:720px; margin:auto }
+
+    /* footer */
+    footer{ padding:2.2rem 0; text-align:center; color:#98bcd8 }
+
+    /* responsive tweaks */
+    @media (max-width:768px){ .hero h1{ font-size:2.4rem } }
+
+    /* neon accent */
+    .accent{ color:var(--accent2); text-shadow:0 6px 30px rgba(0,229,255,0.08) }
+
+    /* dark mode toggle */
+    .toggle{ cursor:pointer }
+
+    /* subtle entrance helper */
+    .sr-hidden{ opacity:0; transform:translateY(12px) }
+
+  </style>
+</head>
+<body>
+
+  <!-- LOADING -->
+  <div id="loading">
+    <div class="loader" aria-hidden="true"></div>
+  </div>
+
+  <!-- NAV -->
+  <nav class="navbar navbar-expand-lg navbar-custom fixed-top">
+    <div class="container py-2">
+      <a class="navbar-brand brand" href="#">Deeven VM</a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navMenu">
+        <span class="navbar-toggler-icon"><i class="fa fa-bars" style="color:#cfe8ff"></i></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navMenu">
+        <ul class="navbar-nav ms-auto align-items-lg-center">
+          <li class="nav-item"><a class="nav-link" href="#about">About</a></li>
+          <li class="nav-item"><a class="nav-link" href="#skills">Skills</a></li>
+          <li class="nav-item"><a class="nav-link" href="#projects">Projects</a></li>
+          <li class="nav-item"><a class="nav-link" href="#achievements">Achievements</a></li>
+          <li class="nav-item"><a class="nav-link" href="#contact">Contact</a></li>
+          <li class="nav-item ps-3"><div class="form-check form-switch toggle"><input class="form-check-input" type="checkbox" id="darkToggle"><label class="form-check-label " for="darkToggle">Dark</label></div></li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <!-- HERO -->
+  <header class="hero d-flex align-items-center">
+    <canvas id="bgCanvas"></canvas>
+    <div class="container content">
+      <div class="row align-items-center">
+        <div class="col-lg-7 text-white">
+          <div class="glass p-4">
+            
+            <h1 id="heroName" class="">Hi, I'm <span class="accent">Deeven VM</span></h1>
+            <p id="heroSubtitle" class="subtitle">Aspiring IT Professional | Web & Full-Stack Developer</p>
+            <div class="cta">
+              <a href="#projects" class="btn btn-lg btn-outline-light me-2">View Projects</a>
+              <a href="#contact" class="btn btn-lg btn-primary">Contact Me</a>
+            </div>
+          </div>
+        </div>
+        <div class="col-lg-5 col-md-12">
+          <div class="glass p-3 d-flex align-items-center">
+            <!-- Left Side Image -->
+            <div class="me-3">
+              <img src="images/PicsArt_06-22-11.25.32 (1).jpg" alt="Quick Snapshot" style="width:150px; height:150px; object-fit:cover; border-radius:50%;">
+            </div>
+            <!-- Text Content -->
+            <div>
+              <h5 class="mb-3">Quick Snapshot</h5>
+              <ul class="list-unstyled mb-0">
+                <li>🎓 BCA graduate</li>
+                <li>💻 ASP.NET, C#, SQL Server</li>
+                <li>⚙️ Python, Flask</li>
+                <li>🤖 AI Tools & Web Development</li>
+              </ul>
+            </div>
+  </div>
+</div>
+
+        
+      </div>
+    </div>
+    <div class="neon-strip"></div>
+  </header>
+
+  <!-- ABOUT -->
+  <section id="about" class="py-5">
+    <div class="container">
+      <div class="row mb-4">
+        <div class="col text-center">
+          <h2 class="">About Me</h2>
+          <p class="lead">Story, education, and progress — animated for clarity.</p>
+        </div>
+      </div>
+
+      <div class="row g-4">
+        <div class="col-lg-7">
+          <div class="glass p-3">
+            <h4>Timeline</h4>
+            <div class="timeline mt-3">
+              <div class="flip-card glass">
+                <div class="flip-inner">
+                  <div class="flip-front p-3">
+                    <h6>BCA — Completed</h6>
+                    <p class="small">Completed Bachelor of Computer Applications with hands-on projects.</p>
+                  </div>
+                  <div class="flip-back p-3">
+                    <h6>Why BCA?</h6>
+                    <p class="small">Built foundation in programming, databases, and system analysis. Led to projects in web and app dev.</p>
+                  </div>
+                </div>
+              </div>
+
+              <div class="flip-card glass">
+                <div class="flip-inner">
+                  <div class="flip-front p-3">
+                    <h6>ASP.NET & C#</h6>
+                    <p class="small">Started building web-applications and management systems.</p>
+                  </div>
+                  <div class="flip-back p-3">
+                    <h6>Experience</h6>
+                    <p class="small">Projects: College Management System, Smart Files Toolkit, Trip Booking System.</p>
+                  </div>
+                </div>
+              </div>
+
+              <div class="flip-card glass">
+                <div class="flip-inner">
+                  <div class="flip-front p-3">
+                    <h6>Databases</h6>
+                    <p class="small">SQL Server for all my projects.</p>
+                  </div>
+                  <div class="flip-back p-3">
+                    <h6>Skills</h6>
+                    <p class="small">Designing schemas, stored procedures, and performance tuning basics.</p>
+                  </div>
+                </div>
+              </div>
+
+              <div class="flip-card glass">
+                <div class="flip-inner">
+                  <div class="flip-front p-3">
+                    <h6>AI Tools & Python</h6>
+                    <p class="small">Learning AI tools and implementing automation scripts.</p>
+                  </div>
+                  <div class="flip-back p-3">
+                    <h6>Toolkit</h6>
+                    <p class="small">Flask and AI tool integrations for projects.</p>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </div>
+
+        <div class="col-lg-5">
+          <div class="glass p-3">
+            <h4>Skills</h4>
+            <div id="skills" class="d-flex flex-wrap gap-3 mt-3 justify-content-center">
+              <!-- Skill items generated by JS -->
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PROJECTS -->
+  <section id="projects" class="py-5">
+    <div class="container">
+      <div class="row mb-4">
+        <div class="col text-center">
+          <h2 class="">Projects</h2>
+          <p class="lead">Selected projects — hover to explore.</p>
+        </div>
+      </div>
+
+      <div class="row g-4">
+        <div class="col-md-6 col-lg-4">
+          <div class="project-card glass">
+            <img src="images/120797470.webp" alt="Trip Booking">
+            <div class="project-overlay text-white">
+              <div>
+                <h5>Online Trip Booking System</h5>
+                <p class="small">C# ASP.NET — multi-destination route planner.</p>
+                <!-- <a class="btn btn-sm btn-outline-light" href="#">Code</a> -->
+                <a class="btn btn-sm btn-light " href="https://github.com/deva7411/traveler-s">View</a>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- <div class="col-md-6 col-lg-4">
+          <div class="project-card glass">
+            <img src="images/images.png" alt="Scholarship">
+            <div class="project-overlay text-white">
+              <div>
+                <h5>Scholarship Application System</h5>
+                <p class="small">ASP.NET — apply, unique ID, admin approvals.</p>
+                <a class="btn btn-sm btn-outline-light" href="#">Live</a>
+                <a class="btn btn-sm btn-light ms-2" href="#">Code</a>
+              </div>
+            </div>
+          </div>
+        </div> -->
+
+        <div class="col-md-6 col-lg-4">
+          <div class="project-card glass">
+            <img src="images/download (5).jpeg" alt="Smart Toolkit">
+            <div class="project-overlay text-white">
+              <div>
+                <h5>Smart File Toolkit</h5>
+                <p class="small">Python Flask — PDF merge, compression, conversion.</p>
+                <a class="btn btn-sm btn-outline-light" href="https://smart-filekit.onrender.com/">Live</a>
+                <a class="btn btn-sm btn-light ms-2" href="https://github.com/deva7411/Smart-FileKit">Code</a>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-md-6 col-lg-4">
+          <div class="project-card glass">
+            <img src="images/download (1).jpeg" alt="College MS">
+            <div class="project-overlay text-white">
+              <div>
+                <h5>College Management System</h5>
+                <p class="small">C# ASP.NET — student module, timetable, courses.</p>
+                
+                <a class="btn btn-sm btn-light ms-2" href="https://github.com/deva7411/Best-Degree-College">View</a>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-md-6 col-lg-4">
+          <div class="project-card glass">
+            <img src="images/download (6).jpeg" alt="Event MS">
+            <div class="project-overlay text-white">
+              <div>
+                <h5>Event Management System</h5>
+                <p class="small">Comming Soon....!</p>
+                <!-- <a class="btn btn-sm btn-outline-light" href="#">Live</a>
+                <a class="btn btn-sm btn-light ms-2" href="#">Code</a> -->
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ACHIEVEMENTS -->
+  <section id="achievements" class="py-5 bg-transparent">
+    <div class="container card btn-light align-items-center">
+      <div class="row mb-4">
+        <div class="col text-center">
+          <h2 class="">Achievements & Certifications</h2>
+          <p class="lead">Recognitions and certifications</p>
+        </div>
+      </div>
+
+      <!-- <div class="row g-4">
+        <div class="col-md-4">
+          <div class="glass ach-card flip-card">
+            <div class="flip-inner p-3">
+              <div class="flip-front">
+                <h6>Certified in Bachelor of Computer Application</h6>
+                <p class="small">In full-time i was Completed my Bachelor's Degree.</p>
+              </div>
+              <div class="flip-back p-2">
+                <small>Best Degree College , Chikkaballapur</small>                 
+              </div>
+            </div>
+          </div>
+        </div> -->
+        
+        <div class="row g-4">
+  <div class="col-md-4">
+    <div class="ach-card flip-card shadow-lg mb-5">
+      <div class="flip-inner p-3">
+        <div class="flip-front">
+          <h6 class="text-center">Certified in Bachelor of Computer Application</h6>
+          <p class="small">In full-time I completed my Bachelor's Degree with CGPA:8.79.</p>
+        </div>
+        <div class="flip-back p-2">
+          <img src="images/download (1).jpeg" alt="Degree Certificate" style="width: 100%; height: 100%; border-radius: 5px;">
+        </div>
+      </div>
+    </div>
+  </div>
+      
+        <div class="col-md-4">
+    <div class="ach-card flip-card shadow-lg mb-5">
+      <div class="flip-inner p-3">
+        <div class="flip-front">
+          <h6 class="text-center">Internship</h6>
+          <p class="small">Full Stack development. My role is front-end Developer.  </p>
+          <p>@EDphoenix Solutions...</p>
+        </div>
+        <div class="flip-back p-2">
+          <img src="images/images (1).png" alt="Degree Certificate" style="width: 100%; height:100%; border-radius: 5px;">
+        </div>
+      </div>
+    </div>
+  </div>
+        
+      </div>
+    </div>
+  </section>
+
+  <!-- CONTACT -->
+  <section id="contact" class="py-5">
+    <div class="container">
+      <div class="row">
+        <div class="col-lg-6">
+          <div class="glass contact-card p-4">
+            <h4>Contact Me</h4>
+            <!-- <p class="">Have a project or opportunity? Let's talk.</p> -->
+            <form id="contactForm" class="mt-3">
+              <div class="mb-3">
+                <label class="form-label">Name</label>
+                <input type="text" class="form-control" id="name" name="name" required>
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Email</label>
+                <input type="email" class="form-control" id="email" name="email" required>
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Message</label>
+                <textarea class="form-control" id="message" rows="4" name="message" required></textarea>
+              </div>
+              <button class="btn btn-primary" type="submit">Send Message</button>
+            </form>
+          </div>
+        </div>
+        <div class="col-lg-6">
+          <div class="glass p-4 text-center">
+            <h5>Connect</h5>
+            <p class="">Find me on</p>
+            <div class="d-flex justify-content-center gap-3">
+              <a href="https://www.linkedin.com/in/deeven-vm-2670ba313/" title="LinkedIn" class="btn btn-outline-light btn-sm"><i class="fab fa-linkedin"></i></a>
+              <a href="https://github.com/deva7411" title="GitHub" class="btn btn-outline-light btn-sm"><i class="fab fa-github"></i></a>
+               <a href="tel:7411340075" title="Call" class="btn btn-outline-light btn-sm"> <i class="fas fa-phone"></i></a>
+            </div>
+            <hr>
+            <p class="small">Or send a quick email to <a href="mailto:enochdeevenvm@example.com">enochdeevenvm@example.com</a></p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <div class="container bg-dark">
+      <p>© <span id="year"></span> Deeven VM .</p>
+    </div>
+  </footer>
+
+  <!-- Bootstrap JS -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+  <script>
+    // --- Utility & small init ---
+    document.getElementById('year').innerText = new Date().getFullYear();
+
+    // DARK MODE TOGGLE
+    const darkToggle = document.getElementById('darkToggle');
+    if (localStorage.getItem('site-dark') === '1') { document.documentElement.classList.add('dark'); darkToggle.checked = true }
+    darkToggle.addEventListener('change', e=>{
+      if (e.target.checked) { document.documentElement.classList.add('dark'); localStorage.setItem('site-dark','1') }
+      else { document.documentElement.classList.remove('dark'); localStorage.setItem('site-dark','0') }
+      // subtle page color animation
+      gsap.to(document.body, {duration:.6, backgroundColor: getComputedStyle(document.documentElement).getPropertyValue('--bg')});
+    });
+
+    // Hide loading after animations
+    window.addEventListener('load', ()=>{
+      gsap.to('#loading', {autoAlpha:0, y:-20, duration:.8, onComplete:()=>document.getElementById('loading').style.display='none'});
+
+      // Hero entrance
+      gsap.from('#heroName', {opacity:0, y:20, duration:0.9, delay:.2, ease:'power3.out'});
+      gsap.from('#heroSubtitle',{opacity:0, y:18, duration:0.9, delay:.4});
+      gsap.from('.cta',{opacity:0, y:12, duration:.9, delay:.6});
+
+      // scroll reveal defaults
+      //ScrollReveal().reveal('.glass', {distance:'20px', duration:800, easing:'ease-in-out', interval:80});
+    });
+
+    // BACKGROUND PARTICLES: lightweight canvas particles
+    const canvas = document.getElementById('bgCanvas');
+    const ctx = canvas.getContext('2d');
+    let W, H, particles = [];
+    function resize(){ W = canvas.width = innerWidth; H = canvas.height = innerHeight; }
+    window.addEventListener('resize', resize); resize();
+
+    function Particle(){
+      this.x = Math.random()*W; this.y = Math.random()*H; this.r = Math.random()*1.6 + 0.6; this.vx = (Math.random()-0.5)*0.6; this.vy = (Math.random()-0.5)*0.6; this.life = Math.random()*80+60; this.alpha=0.08+Math.random()*0.25;
+    }
+    for(let i=0;i<120;i++) particles.push(new Particle());
+
+    function draw(){ ctx.clearRect(0,0,W,H);
+      for(let p of particles){
+        p.x += p.vx; p.y += p.vy; p.life-=0.2;
+        if(p.x < 0) p.x = W; if(p.x>W) p.x=0; if(p.y<0) p.y=H; if(p.y>H) p.y=0;
+        ctx.fillStyle = `rgba(0,229,255,${p.alpha})`;
+        ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,Math.PI*2); ctx.fill();
+      }
+      // connect lines
+      for(let i=0;i<particles.length;i++){
+        for(let j=i+1;j<particles.length;j++){
+          let a=particles[i], b=particles[j]; let d = (a.x-b.x)**2 + (a.y-b.y)**2;
+          if(d < 6000){ ctx.beginPath(); ctx.moveTo(a.x,a.y); ctx.lineTo(b.x,b.y); ctx.strokeStyle = 'rgba(124,97,255,0.03)'; ctx.lineWidth=0.6; ctx.stroke(); }
+        }
+      }
+      requestAnimationFrame(draw);
+    }
+    draw();
+
+    // // Skills rendering + circular progress animation using SVG
+    // Skills rendering + circular progress animation using SVG
+// Skills rendering + circular progress animation using SVG
+const skills = [
+  { name: 'ASP.NET', value: 90 },
+  { name: 'C#', value: 90 },
+  { name: 'SQL Server', value: 80 },
+  { name: 'HTML/CSS', value: 92 },
+  { name: 'JavaScript', value: 60 },
+  { name: 'Python', value: 40 },
+  { name: 'AI Tools', value: 70 },
+  {name: 'Figma', value:70},
+  {name: 'Azure ', value: 20}
+];
+
+// Select the container where skill circles will be added
+const skillsWrap = document.querySelector('#skills');
+
+// Loop through each skill and create its SVG circular progress
+skills.forEach(s => {
+  // Create skill wrapper div
+  const div = document.createElement('div');
+  div.className = 'd-flex flex-column align-items-center m-2 text-center';
+
+  // Add SVG circle and label
+  div.innerHTML = `
+    <div class="skill-circle glass d-flex flex-column align-items-center justify-content-center">
+      <svg width="90" height="90" viewBox="0 0 100 100">
+        <!-- Gradient definition for stroke -->
+        <defs>
+          <linearGradient id="g${s.name.replace(/\s/g, '')}">
+            <stop offset="0%" stop-color="var(--accent1)"/>
+            <stop offset="100%" stop-color="var(--accent2)"/>
+          </linearGradient>
+        </defs>
+        <!-- Background circle (light transparent stroke) -->
+        <circle cx="50" cy="50" r="40" stroke="rgba(255,255,255,0.06)" stroke-width="10" fill="none"></circle>
+        <!-- Foreground animated progress circle -->
+        <circle class="pbar" cx="50" cy="50" r="40" stroke="url(#g${s.name.replace(/\s/g, '')})" stroke-width="10" fill="none" stroke-linecap="round" stroke-dasharray="251.2" stroke-dashoffset="251.2" transform="rotate(-90 50 50)"></circle>
+        <!-- Percentage text (white) -->
+        <text x="50" y="56" font-size="16" text-anchor="middle" fill="white">0%</text>
+      </svg>
+    </div>
+    <!-- Skill name label -->
+    <div class="skill-label">${s.name}</div>
+  `;
+
+  // Append skill circle to container
+  skillsWrap.appendChild(div);
+
+  // Select the animated circle
+  const circle = div.querySelector('.pbar');
+
+  // Animate the stroke offset to show progress
+  gsap.to(circle, {
+    strokeDashoffset: 251.2 - (251.2 * s.value / 100), // Calculate how much of the circle to fill
+    duration: 1.4,
+    delay: 0.6,
+    ease: 'power2.out'
+  });
+
+  // Select the percentage text
+  const text = div.querySelector('text');
+  
+  // Animate number counting up
+  let obj = { val: 0 };
+  gsap.to(obj, {
+    val: s.value, // Target value
+    duration: 1.4,
+    delay: 0.6,
+    ease: 'power2.out',
+    onUpdate: function () {
+      // Update SVG text with rounded percentage value
+      text.textContent = Math.round(obj.val) + '%';
+    }
+  });
+});
+
+
+    // const skills = [
+    //   {name:'ASP.NET', value:90}, {name:'C#', value:92}, {name:'SQL Server', value:88}, {name:'HTML/CSS', value:92}, {name:'JavaScript', value:86}, {name:'Python', value:78}, {name:'AI Tools', value:70}
+    // ];
+    // const skillsWrap = document.querySelector('#skills');
+    // skills.forEach(s=>{
+    //   const div = document.createElement('div'); div.className='d-flex flex-column align-items-center m-2 text-center';
+    //   div.innerHTML = `
+    //     <div class="skill-circle glass d-flex flex-column align-items-center justify-content-center">
+    //       <svg width="90" height="90" viewBox="0 0 100 100">
+    //         <defs><linearGradient id="g${s.name.replace(/\s/g,'')}"><stop offset="0%" stop-color="var(--accent1)"/><stop offset="100%" stop-color="var(--accent2)"/></linearGradient></defs>
+    //         <circle cx="50" cy="50" r="40" stroke="rgba(255,255,255,0.06)" stroke-width="10" fill="none"></circle>
+    //         <circle class="pbar" cx="50" cy="50" r="40" stroke="url(#g${s.name.replace(/\s/g,'')})" stroke-width="10" fill="none" stroke-linecap="round" stroke-dasharray="251.2" stroke-dashoffset="251.2" transform="rotate(-90 50 50)"></circle>
+    //         <text x="50" y="56" font-size="16" text-anchor="middle">0%</text>
+    //       </svg>
+    //     </div>
+    //     <div class="skill-label">${s.name}</div>
+    //   `;
+    //   skillsWrap.appendChild(div);
+
+    //   // animate pbar
+    //   const circle = div.querySelector('.pbar');
+    //   const text = div.querySelector('text');
+    //   const percent = s.value;
+    //   gsap.to(circle, {strokeDashoffset: 251.2 - (251.2 * percent/100), duration:1.4, delay:0.6, ease:'power2.out'});
+    //   gsap.to(text, {innerText:percent, duration:1.4, delay:0.6, ease:'power2.out', snap:{innerText:1}, onUpdate:function(){ text.textContent = Math.round(this.targets()[0].innerText) + '%'; }});
+    // });
+
+    // Projects hover animation
+    document.querySelectorAll('.project-card').forEach((card, i)=>{
+      gsap.from(card, {y:10, autoAlpha:0, duration:.7, delay: 0.12*i});
+    });
+
+    // Contact form animation + fake send
+    // const form = document.getElementById('contactForm');
+    // form.addEventListener('submit', e=>{
+    //   e.preventDefault();
+    //   const btn = form.querySelector('button');
+    //   btn.disabled = true; btn.innerHTML = 'Sending...';
+    //   gsap.to(btn, {scale:0.98, duration:.08, yoyo:true, repeat:1});
+    //   setTimeout(()=>{
+    //     gsap.to(btn, {autoAlpha:0, y:-8, duration:.5});
+    //     const done = document.createElement('div'); done.className='mt-3 text-success'; done.innerHTML = '<i class="fa fa-check-circle"></i> Message sent'; form.appendChild(done);
+    //   },1200);
+    // });
+
+    // Navigation smooth scroll
+    document.querySelectorAll('a.nav-link').forEach(a=>{
+      a.addEventListener('click', e=>{
+        e.preventDefault(); const id = a.getAttribute('href'); if(!id) return; document.querySelector(id).scrollIntoView({behavior:'smooth', block:'start'});
+      });
+    });
+
+    // small entrance for achievements
+    ScrollReveal().reveal('.ach-card', {distance:'30px', interval:120});
+
+    // subtle hover parallax for hero glass
+    const heroGlass = document.querySelector('.hero .glass');
+    document.querySelector('.hero').addEventListener('mousemove', e=>{
+      const rect = e.currentTarget.getBoundingClientRect(); const x = (e.clientX-rect.left)/rect.width - 0.5; const y = (e.clientY-rect.top)/rect.height - 0.5;
+      gsap.to(heroGlass, {rotationY: x*6, rotationX: -y*6, transformPerspective:800, transformOrigin:'center', duration:.6});
+    });
+
+    // small ripple on nav links
+    document.querySelectorAll('.nav-link').forEach(link=>{ link.addEventListener('mouseenter', ()=> gsap.fromTo(link,{y:6},{y:0,duration:.3})); });
+
+//get in chouch
+document.getElementById("contactForm").addEventListener("submit", function(e) {
+    e.preventDefault();
+
+    const formData = {
+        name: this.name.value,
+        email: this.email.value,
+        message: this.message.value
+    };
+
+    fetch("https://script.google.com/macros/s/AKfycbyIM0jK8wkVJq5Mr-cxIKX_ajTAkrTaCYsbO4c1D-8iNwe4f-oLhJZ8BUNhflyvlv1D/exec", {
+        method: "POST",
+        mode: "no-cors",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData)
+    }).then(() => {
+        alert("✅ Message sent successfully!");
+        this.reset();
+    }).catch(() => {
+        alert("❌ Error sending message. Try again.");
+    });
+});
+
+
+  </script>
+</body>
+</html>
